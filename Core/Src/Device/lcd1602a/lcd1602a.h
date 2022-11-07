@@ -1,0 +1,9 @@
+#ifndef LUNASYS_LCD1602A_LCD1602A_H
+#define LUNASYS_LCD1602A_LCD1602A_H
+
+
+uint32_t Init_LCD1602A();
+void Clear_Display_LCD1602A();
+
+
+#endif // LUNASYS_LCD1602A_LCD1602A_H
