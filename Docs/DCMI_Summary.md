@@ -24,9 +24,13 @@ __Table 1: Camera Module Signals Overview__
 
 ## DCMI Signals and Architecture
 
-Figure 1 shows 
+Figure 1 shows a block diagram with the input and output signals of the DCMI.
 
-![](INSERT dcmi_signals.png HERE LATER)
+<p align="center">
+  <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/dcmi_signals.png">
+</p>
+
+<p align="center"><b>Figure 1: DCMI signals</b></p>
 
 The OV7670 has 8 pixel data output pins that interface with GPIO pins on the STM32F446-RE assigned to DCMI (`DCMI_Dx`) through GPIO alternate functions. In particular, x (in `DCMI_Dx`) is in the set { 0, 1, 2, 3, 4, 5, 6, 7 }; an 8-bit data width means that 1 byte of image data is transferred each pixel clock (DCMI_PIXCLK) cycle into a __data extractor__, which - unsurprisingly - extracts the data received by the DCMI. 
 
@@ -36,11 +40,19 @@ The 4-word FIFO is where data from the data extractor is packed. It adapts the d
 
 Figure 2 shows the main components of the DCMI, taken from the AN5020 STM reference. 
 
-![](INSERT dcmi_arch.png HERE LATER)
+<p align="center">
+  <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/dcmi_arch.png">
+</p>
 
-The 32-bit register is where the data from the 4-word FIFO is ordered. The little-endian format is supported and used, wherein the LSB (least significant byte) is stored in the smallest address. As may be observed for the 32-bit word in Figure 3, the first captured data byte is placed in the LSB position and the fourth captured byte is placed in the MSB position. For the OV7670, we are interested in an 8-bit data width; a 32-bit word would thus be made up every four pixel clock cycles (32 / 8 = 4).
+<p align="center"><b>Figure 2: DCMI architecture [1]</b></p>
 
-![](INSERT dcmi_32bitword.png HERE LATER)
+The 32-bit register is where the data from the 4-word FIFO is ordered. The little-endian format is supported and used, wherein the LSB (least significant byte) is stored in the smallest address. As may be observed for the 32-bit word in Figure 3, the first captured data byte is placed in the LSB position and the fourth captured byte is placed in the MSB position. For the OV7670, we are interested in an 8-bit data width; a 32-bit word would thus be made up every four pixel clock cycles (32 / 8 = 4). See Figure 3.
+
+<p align="center">
+  <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/dcmi_32bitword.png">
+</p>
+
+<p align="center"><b>Figure 3: Structure of 32-bit word [1]</b></p>
 
 Once the 32-bit word is made, a DMA (direct memory access) request is generated. The DCMI is connected to the AHB matrix via AHB2 peripherals, and is accessed by the DMA controller to transfer data to the appropriate memory destination (either to internal SRAMs or to external memory via flexible memory controller, or FMC).
 
@@ -54,7 +66,11 @@ In this project, the active level is active high for both LINE VALID (HSYNC) and
 
 See Figure 4 for reference.
 
-![](INSERT dcmi_hwframestruct.png HERE LATER)
+<p align="center">
+  <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/dcmi_hwframestruct.png">
+</p>
+
+<p align="center"><b>Figure 4: Hardware Frame Structure</b> [1]</p>
 
 <br />
 
@@ -65,8 +81,6 @@ Two capture modes are supported by the DCMI:
 1. Snapshot
 2. Continuous Grab
 
-<br />
-
 ### Snapshot Mode
 
 In this mode, only a single frame is captured. Data sampling only begins once the interface detects a start of frame, which is represented by a `DCMI_VSYNC` signal for the hardware (external) synchronization mode. 
@@ -75,13 +89,11 @@ Once the first completed frame is received, the DCMI is automatically disabled, 
 
 The capture is enabled by setting the `CAPTURE` bit in `DCMI_CR`, and is cleared when the first frame is completely sampled.
 
-<br />
-
 ### Continuous Grab Mode
 
 In continuous grab mode, data sampling also begins once the interface detects a `DCMI_VSYNC` signal. The difference betwee n this mode and snapshot mode is that the DCMI is not automatically disabled; instead, the user must disable it by setting `CAPTURE=0`. It should be noted that the DCMI will continue to grab data until the end of the current frame. 
 
-<br /> 
+<br />
 
 ## Configuration
 
@@ -95,8 +107,6 @@ To correctly implement the application, first reset the DCMI and the camera modu
 
 Some practices and recommendations are given in the ensuing sections.
 
-<br />
-
 ### GPIO Configuration 
 
 GPIOs can be assigned to DCMI using GPIO alternate functions. Depending on the configuration of the `EDM` (extended data mode) bits in the `DCMI_CR` register, the DCMI should receive an 8-bpp clock (`DCMI_PIXCLK`). 
@@ -108,8 +118,6 @@ Given an 8-bit data width as well as hardware (external) synchronization, only 1
 3. One (1) `DCMI_VSYNC` pin
 4. One (1) `DCMI_HSYNC` pin
 
-<br />
-
 ### Clock and Timing Configuration
 
 The highest system clock will be used for best performance. The `DCMI_PIXCLK` configuration will be the same as the pixel clock configuration of the camera module.
@@ -118,7 +126,6 @@ The capture edge (rising or falling) is configured through the `PCKPOL` bit in t
 
 For the hardware synchronization mode, the `DCMI_HSYNC` and `DCMI_VSYNC` polarities are programmed according to the camera module configuration, and are set using the `HSPOL` and `VSPOL` bits in `DCMI_CR`, respectively. 
 
-
 ### DCMI and DMA Configuration
 
 [TODO] Finish this section!
@@ -126,8 +133,6 @@ For the hardware synchronization mode, the `DCMI_HSYNC` and `DCMI_VSYNC` polarit
 Configuring the DCMI means selecting the capture mode, the data format, image size, and resolution. See section 6.3 of AN5020 for more details.
 
 Configuring the DMA means setting up the proper DCMI-to-memory transfers (transfer direction, source address, destination address, peripheral data width, the number of 32-bit data words for transfer, and the DMA operation mode), the configuration relative to image size and capture mode, channel and stream, and the FIFO. See section 6.4 of AN5020 for more information. 
-
-<br />
 
 ### Camera Module
 
@@ -143,3 +148,9 @@ In the initialization step, several key features can be configured:
 4. Synchronization mode
 5. Clock signal frequencies
 6. Output data format
+
+__________
+
+# References
+
+[1] ST Microelectronics, "AN5020 Revision 2: Digital camera interface (DCMI) for STM32 MCUs - Application note," 2022. [Online]. Available:        https://www.st.com/resource/en/application_note/an5020-digital-camera-interface-dcmi-on-stm32-mcus-stmicroelectronics.pdf.
