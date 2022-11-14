@@ -17,7 +17,7 @@ __Table 1: Camera Module Signals Overview__
 | :----------:|:------------|
 | Control     | Used for clock generation and data transfer synchonization. Camera modules provide two data synchronization signals: (1) HSYNC (horizontal or line synchronization); and (2) VSYNC (vertical or frame synchronization). |
 | Image Data  | The width of these signals determines the number of bits to be transferred at each pixel clock. |
-| Power Supply | Fairly obvious use case. The OV7670 in particular requires 3.3V+ in.|
+| Power Supply | Fairly obvious use case. See the Power Constraints section of the OV7670_Summary.md for more information. |
 | Camera Configuration | Related to several image features, including resolution, format, frame rate, contrast, and brightness. These signals are also used for interface type selection (parallel versus serial). |      
 
 <br />
@@ -62,7 +62,7 @@ Once the 32-bit word is made, a DMA (direct memory access) request is generated.
 
 The data synchronization method implemented in Luna is the __hardware__ or __external__ synchronization method. The `DCMI_PIXCLK` captured edge is configured to be the rising edge (by convention) and both `DCMI_VSYNC` and `DCMI_HSYNC` are programmed active level. 
 
-In this project, the active level is active high for both LINE VALID (HSYNC) and FRAME VALID (VSYNC). This means that data at the sampling points (rising edges of the clock signal) are considered invalid ("blank" frames, either vertical or horizontal blanking).
+In this project, the active level is active high for both LINE VALID (HSYNC) and FRAME VALID (VSYNC). This means that data at the sampling points (rising edges of the clock signal) are considered invalid ("blank" frames, either vertical or horizontal blanking) when HSYNC or VSYNC are high.
 
 See Figure 4 for reference.
 
@@ -91,7 +91,7 @@ The capture is enabled by setting the `CAPTURE` bit in `DCMI_CR`, and is cleared
 
 ### Continuous Grab Mode
 
-In continuous grab mode, data sampling also begins once the interface detects a `DCMI_VSYNC` signal. The difference betwee n this mode and snapshot mode is that the DCMI is not automatically disabled; instead, the user must disable it by setting `CAPTURE=0`. It should be noted that the DCMI will continue to grab data until the end of the current frame. 
+In continuous grab mode, data sampling also begins once the interface detects a `DCMI_VSYNC` signal. The difference between this mode and snapshot mode is that the DCMI is not automatically disabled; instead, the user must disable it by setting `CAPTURE=0`. It should be noted that the DCMI will continue to grab data until the end of the current frame. 
 
 <br />
 
