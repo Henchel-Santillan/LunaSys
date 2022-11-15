@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f4xx_hal.h"
 
 
 /* Private includes ----------------------------------------------------------*/
@@ -43,12 +44,21 @@
 
 /* USER CODE BEGIN PV */
 
+DCMI_HandleTypeDef hdcmi;
+DMA_HandleTypeDef hdma;
+I2C_HandleTypeDef hi2c;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+
 /* USER CODE BEGIN PFP */
 
+static void DMA_Init();
+static void DCMI_Init();
+static void GPIO_Init();
+static void I2C_Init();
 
 /* USER CODE END PFP */
 
@@ -85,6 +95,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
+
+  DMA_Init();
+  DCMI_Init();
+  GPIO_Init();
+  I2C_Init();
 
   /* USER CODE END 2 */
 
@@ -141,6 +156,51 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+static void DMA_Init() {
+
+	// Enable DMA controller clocks
+	__HAL_RCC_DMA1_CLK_ENABLE();
+	__HAL_RCC_DMA2_CLK_ENABLE();
+
+
+	// Initialize DMA interrupts using the NVIC
+
+}
+
+static void DCMI_Init() {
+	hdcmi.Instance              = DCMI;
+	hdcmi.Init.SynchroMode 		= DCMI_SYNCHRO_HARDWARE;	// Hardware (external) synchronization
+	hdcmi.Init.PCKPolarity 		= DCMI_PCKPOLARITY_RISING;  // Pixel clock polarity - sample on the rising edge
+	hdcmi.Init.VSPolarity  		= DCMI_VSPOLARITY_HIGH;		// Configure DCMI VSYNC active level to be high, since valid frames on the OV7670 are VSYNC active low
+	hdcmi.Init.HSPolarity  		= DCMI_HSPOLARITY_LOW;		// DCMI HSYNC is active level low, since lines are valid on HSYNC high on the OV7670
+	hdcmi.Init.CaptureRate 		= DCMI_CR_ALL_FRAME;	    // Frequency of frame capture. Here, all frames will be captured.
+	hdcmi.Init.ExtendedDataMode = DCMI_EXTEND_DATA_8B;		// 8-bit data width - 1 byte per PIXCLK
+	hdcmi.Init.JPEGMode 		= DCMI_JPEG_DISABLED;		// Disable JPEG mode, since image compression is not needed for Luna
+
+	if (HAL_DCMI_Init(&hdcmi) != HAL_OK) {
+		Error_Handler();
+	}
+}
+
+static void GPIO_Init() {
+	GPIO_InitTypeDef igpio;
+
+	// Enable the GPIO clocks
+}
+
+static void I2C_Init() {
+	hi2c.Instance            	 = I2C2;
+	hi2c.Init.ClockSpeed     	 = 100000;						// I2C clock frequency < 400kHz. Common frequencies: 100, 400, and 1000 kHz. Choose 100 kHz.
+	hi2c.Init.AddressingMode 	 = I2C_ADDRESSINGMODE_7_BIT;	// 7-bit mode is standard I2C mode, where 7-bit peripheral address is transferred in 1st byte after start condition
+	hi2c.Init.DualAddressingMode = I2C_DUALADDRESS_DISABLE;	    //
+	hi2c.Init.GeneralCallMode    = I2C_GENERALCALL_DISABLE; 	//
+	hi2c.Init.NoStretchMode      = I2C_NOSTRETCH_DISABLE;		//
+
+	if (HAL_I2C_Init(&hi2c) != HAL_OK) {
+		Error_Handler();
+	}
+}
 
 /* USER CODE END 4 */
 
