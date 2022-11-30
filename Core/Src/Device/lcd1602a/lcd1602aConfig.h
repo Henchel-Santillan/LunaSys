@@ -8,6 +8,11 @@
  *
  * */
 
+//**** DEVICE-SPECIFIC CHARACTERISTICS ****//
+
+#define LINES 2
+#define COLUMNS 16
+
 
 //**** BASE COMMAND DEFINITIONS ****//
 

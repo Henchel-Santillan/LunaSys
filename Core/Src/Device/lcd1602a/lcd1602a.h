@@ -1,9 +1,7 @@
 #ifndef LUNASYS_LCD1602A_LCD1602A_H
 #define LUNASYS_LCD1602A_LCD1602A_H
 
-#include "lcd1602aConfig.h"
 #include "stm32f4xx_hal.h"
-
 #include <stdint.h>
 
 // Uncomment to use eight-bit mode
@@ -32,7 +30,6 @@ typedef struct _LCD_TypeDef {
 
 	Pin_TypeDef *D4, *D5, *D6, *D7;		// LSB - Data Pins
 
-
 } LCD_TypeDef;
 
 
@@ -45,28 +42,29 @@ void Init_LCD1602A(LCD_TypeDef *p_lcd, Pin_TypeDef *rs, Pin_TypeDef *rw, Pin_Typ
 #endif
 		Pin_TypeDef *D4, Pin_TypeDef *D5, Pin_TypeDef *D6, Pin_TypeDef *D7);
 
-void Clear_Display_LCD1602A(LCD_TypeDef *p_lcd);
+void Home_Return_LCD1602A(LCD_TypeDef *p_lcd);
 
-void Return_Home_LCD1602A(LCD_TypeDef *p_lcd);
-
-void Shift_Cursor_LCD1602A(LCD_TypeDef *p_lcd);
-
-void Write_Char_LCD1602A(LCD_TypeDef *p_lcd, uint8_t *ch);
-
-void Write_String_LCD1602A(LCD_TypeDef *p_lcd, uint8_t *str);
-
+void Display_Clear_LCD1602A(LCD_TypeDef *p_lcd);
 void Display_Off_LCD1602A(LCD_TypeDef *p_lcd);
-
 void Display_On_LCD1602A(LCD_TypeDef *p_lcd);
+void Display_ShiftLeft_LCD1602A(LCD_TypeDef *p_lcd);
+void Display_ShiftRight_LCD1602A(LCD_TypeDef *p_lcd);
+void Display_LeftToRight_LCD1602A(LCD_TypeDef *p_lcd);
+void Display_RightToLeft_LCD1602A(LCD_TypeDef *p_lcd);
+
+void Cursor_Off_LCD1602A(LCD_TypeDef *p_lcd);
+void Cursor_On_LCD1602A(LCD_TypeDef *p_lcd);
+void Cursor_Set_LCD1602A(LCD_TypeDef *p_lcd, uint8_t line, uint8_t column);
+void Cursor_ShiftLeft_LCD1602A(LCD_TypeDef *p_lcd);
+void Cursor_ShiftRight_LCD1602A(LCD_TypeDef *p_lcd);
+void Cursor_JustifyLeft_LCD1602A(LCD_TypeDef *p_lcd);
+void Cursor_JustifyRight_LCD1602A(LCD_TypeDef *p_lcd);
 
 void Blink_Off_LCD1602A(LCD_TypeDef *p_lcd);
-
 void Blink_On_LCD1602A(LCD_TypeDef *p_lcd);
 
-void Scroll_Left_LCD1602A(LCD_TypeDef *p_lcd);
-
-void Scroll_Right_LCD1602A(LCD_TypeDef *p_lcd);
-
+void Write_Char_LCD1602A(LCD_TypeDef *p_lcd, uint8_t *ch);
+void Write_String_LCD1602A(LCD_TypeDef *p_lcd, uint8_t *str);
 
 
 /* Users of this Device Library should generally not have to call these functions, and it is advised to use
