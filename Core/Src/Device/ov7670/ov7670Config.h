@@ -3,7 +3,7 @@
 
 /*
  * Configuration file for the OV7670 device
- * Defines pin addresses and device-specific settings
+ * Defines device-specific settings
  *
  * */
 
@@ -40,11 +40,54 @@ const uint8_t dev_reg_config[][2] = {
 	{ 0x3A, 0xC },
 	{ 0x3D, 0x80 },
 
+	// COM16: Edge-enhancement, de-noise for YUV output, and AWB (Auto White Balance) gain enable
+	{ 0x41, 0x38 },
+
 	// MVFP: Enable horizontal flip only
 	{ 0x1E, 0x20 },
 
-	// CLKRC: Set F(internal clock) = F(input clock), i.e. pre-scaler = 1:1. Clock source is not divided.
-	{ 0x11, 0x00 },
+	// Clock-Related and Scaling
+	{ 0x0C, 0x04 },	// Enable DCW
+	{ 0x70, 0x3A },	// X scaling
+	{ 0x71, 0x35 },	// Y scaling
+	{ 0x72, 0x11 },	// DCW scaling
+	{ 0x73, 0xF0 }, // PCLK_DIV
+
+	// Windowing
+	{ 0x11, 0x00 },	// CLKRC: Set F(internal clock) = F(input clock), i.e. pre-scaler = 1:1. Clock source is not divided.
+	{ 0x17, 0x17 },	// HSTART
+	{ 0x18, 0x04 },	// HSTOP
+	{ 0x19, 0x02 }, // VSTART
+	{ 0x1A, 0x7B },	// VSTOP
+	{ 0x32, 0x80 },	// HREF
+	{ 0x03, 0x0A },	// VREF
+
+	// Matrix coefficients TODO FIXME
+	{ 0x4f, 0x80 }, //
+	{ 0x50, 0x80 }, //
+	{ 0x51, 0x00 }, //
+	{ 0x52, 0x22 }, //
+	{ 0x53, 0x5e }, //
+	{ 0x54, 0x80 }, //
+	{ 0x58, 0x9e },
+
+	// Gamma curve values TODO FIXME
+	{ 0x7a, 0x20 }, //
+	{ 0x7b, 0x10 }, //
+	{ 0x7c, 0x1e }, //
+	{ 0x7d, 0x35 }, //
+	{ 0x7e, 0x5a }, //
+	{ 0x7f, 0x69 }, //
+	{ 0x80, 0x76 }, //
+	{ 0x81, 0x80 }, //
+	{ 0x82, 0x88 }, //
+	{ 0x83, 0x8f }, //
+	{ 0x84, 0x96 }, //
+	{ 0x85, 0xa3 }, //
+	{ 0x86, 0xaf }, //
+	{ 0x87, 0xc4 }, //
+	{ 0x88, 0xd7 }, //
+	{ 0x89, 0xe8 },
 
 	// Mark end of configuration
 	{ REG_RANGE, REG_RANGE }
