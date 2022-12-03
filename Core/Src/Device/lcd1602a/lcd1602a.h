@@ -9,7 +9,7 @@
 
 typedef struct _Pin_TypeDef {
 
-	GPIO_TypeDef *GPIO_PERIPHERAL;	// GPIOx, x = { A, ..., K }
+	GPIO_TypeDef *GPIO_PERIPHERAL;	// GPIOx, x = { A, ..., H }
 	uint32_t GPIO_PIN;				// GPIO_Pin_x, x = { 0, ..., 15 }
 
 } Pin_TypeDef;
