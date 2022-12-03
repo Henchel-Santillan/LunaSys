@@ -4,7 +4,7 @@
 
 /*
  * Configuration file for the LCD1602A device
- * Defines pin addresses and device-specific settings
+ * Defines device-specific settings
  *
  * */
 
