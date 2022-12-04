@@ -1,7 +1,7 @@
-# OV7670 Overview
+# OV7670 Device Overview
 
 ## Preface 
-The OV7670 is a CMOS camera . It can operate at a maximum of 30 frames per second (fps) and is limited to VGA resolution (640 x 480 px). The OV7670 module used in the Luna project comes without a FIFO buffer.
+The OV7670 is a CMOS camera. It can operate at a maximum of 30 frames per second (fps) and is limited to VGA resolution (640 x 480 px). The OV7670 module used in the Luna project comes without a FIFO buffer.
 
 <br />
 
@@ -35,7 +35,7 @@ According to the datasheet, 3.3V can be safely supplied to VDD. The I/O pins may
 <br />
 
 ## Configuration Signals
-The OV7670 is parametrized through an I2C communication bus. On the F446-RE, pin `PB10` will be assigned to `I2C2_SCL`, which will connect to the `SCL` (serial clock line) pin of the OV7670. Pin `PB11` will be assigned to `I2C2_SDA`, which in turn will connect to the `SDA` (serial data line) pin of the OV7670.
+The OV7670 is parametrized through an I2C communication bus. On the F446-RE, pin `PB10` will be assigned to `I2C2_SCL`, which will connect to the `SCL` (serial clock line) pin of the OV7670. Pin `PC12` will be assigned to `I2C2_SDA`, which in turn will connect to the `SDA` (serial data line) pin of the OV7670.
 
 <br />
 
@@ -48,7 +48,7 @@ It may be worthwhile to note parenthetically that by default, the frequency of `
 
 The `VS` pin of the OV7670 is for `VSYNC`, and the `HS` pin is for `HSYNC`. For a valid capture, VSYNC must be configured __active high__ on the STM32 (since a valid capture occurs when VSYNC is low) and HSYNC must be configured __active low__ on the STM32 (since a valid capture occurs when HSYNC is high). During `HSYNC` high state, 640 pixels must be captured. This is equivalent to _one line_. During `VSYNC` low state, 480 lines must be captured. This gives the image resolution of VGA, or 640 x 480 pixels.
 
-On the F446-RE, pins `PA4` and `PG9` have been assigned to `DCMI_HSYNC` and `DCMI_VSYNC`, respectively. 
+On the F446-RE, pins `PA4` and `PB7` have been assigned to `DCMI_HSYNC` and `DCMI_VSYNC`, respectively. 
 
 <br />
 
@@ -86,5 +86,12 @@ The OV7670 supports the following frame formats:
 4. QCIF (176 x 144)
 5. Manual Scaling
 
-
 <br />
+
+## SCCB
+
+The SCCB (Serial Camera Control Bus) on the OV7670 is compatible with I2C. See the OmniVision SCCB specification here 
+
+>https://www.waveshare.com/w/upload/1/14/OmniVision_Technologies_Seril_Camera_Control_Bus%28SCCB%29_Specification.pdf 
+
+for more information.
