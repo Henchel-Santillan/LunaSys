@@ -72,4 +72,8 @@ __Table 1: Summary of Fields, `GPIO_Init_TypeDef`__
 | Speed | Controls the __slew rate__, or the rise and fall times (or the rate at which a signal changes between LOW and HIGH); applicable when the GPIO is in output mode |
 | Alternate | Defines the peripheral to be connected to the selected pins, labelled as `GPIO_AFx_PPP`, where `AFx` is the _alternate function index_ and `PPP` is the _peripheral instance_ |
 
-
+Below are the general steps followed to configure GPIO:
+1. Enable GPIO AHB clock using `__HAL_RCC_GPIOx_CLK_ENABLE()`, where x is from A to H (for LQFP64 STM32F446Re, only A to D are applicable). 
+2. Configure the IO mode, pull-up or pull-down resistor, speed (in the case of output of alternate function mode selection), the alternate member or field (in the case of alternate function mode selection), and the pin using `HAL_GPIO_Init()`. Note that if a pin is to be used as an ADC channel (as was the case for the potentiometer), analog mode is required.
+3. `HAL_GPIO_ReadPin()` gets the level of a pin configured in input mode.
+4. `HAL_GPIO_WritePin()` and `HAL_GPIO_TogglePin()` set or reset the pin level.
