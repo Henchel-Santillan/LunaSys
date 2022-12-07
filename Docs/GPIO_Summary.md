@@ -25,7 +25,7 @@ In implementing an open-drain output, a single NMOS transistor has its drain ter
 See Figure 1 for a diagram.
 
 <p align="center">
-    <img src="">
+    <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/gpio_opendrain.png">
 </p>
 
 <p align="center"><b>Figure 1: Open-Drain configuration</b></p>
@@ -39,7 +39,7 @@ Push-pull is the more common GPIO mode, and is used to drive two output levels: 
 In a simplified but practical implementation of a push-pull output, the gates of both a __PMOS__ and an __NMOS__ transistor are connected to an internal signal line. An output pin forms a junction with the drain terminals of the MOSFETs. See Figure 2 for a diagram.
 
 <p align="center">
-    <img src="">
+    <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/gpio_pushpull.png">
 </p>
 
 <p align="center"><b>Figure 2: MOSFET circuit illustrating the push-pull configuration</b></p>
