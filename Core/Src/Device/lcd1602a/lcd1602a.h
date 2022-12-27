@@ -63,7 +63,7 @@ void Write_String_LCD1602A(LCD_TypeDef *p_lcd, uint8_t *str, uint8_t str_size);
 
 /* Users of this Device Library should generally not have to call these functions, and it is advised to use
  * the Device Library functions suffixed with "LCD1602A" instead. Users that do choose to use these functions should
- * include "lcd1602aConfig.h" and use the predefined command and flag macros.
+ * #include "lcd1602aConfig.h" and use the predefined command and flag macros.
  *  */
 
 void send_command(LCD_TypeDef *p_lcd, uint8_t command);

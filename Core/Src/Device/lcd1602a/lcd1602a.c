@@ -1,6 +1,6 @@
 #include "lcd1602a.h"
 
-#include "lcd1602aConfig.h"
+#include "lcd1602a_config.h"
 
 
 /*** STATIC VARIABLES ***/

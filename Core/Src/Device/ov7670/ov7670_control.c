@@ -12,7 +12,7 @@ void OV7670_MCO1_Init(void) {
 	gpio_init_mco1.Pin = GPIO_PIN_8;
 	gpio_init_mco1.Mode = GPIO_MODE_AF_PP;
 	gpio_init_mco1.Pull = GPIO_NOPULL;
-	gpio_init_mco1.Speed = GPIO_SPEED_HIGH;
+	gpio_init_mco1.Speed = GPIO_SPEED_FREQ_VERY_HIGH;	// 50 MHz to 200 MHz
 	gpio_init_mco1.Alternate = GPIO_AF0_MCO;
 	HAL_GPIO_Init(GPIOA, &gpio_init_mco1);
 }
@@ -45,7 +45,7 @@ void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	gpio_init_dcmi.Pin = GPIO_PIN_4 | GPIO_PIN_6;
 	gpio_init_dcmi.Mode = GPIO_MODE_AF_PP;
 	gpio_init_dcmi.Pull = GPIO_PULLUP;
-	gpio_init_dcmi.Speed = GPIO_SPEED_HIGH;
+	gpio_init_dcmi.Speed = GPIO_SPEED_FREQ_HIGH;	// 25 MHz to 100 MHz
 	gpio_init_dcmi.Alternate = GPIO_AF13_DCMI;
 	HAL_GPIO_Init(GPIOA, &gpio_init_dcmi);
 
@@ -53,7 +53,7 @@ void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	gpio_init_dcmi.Pin = GPIO_PIN_5 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;
 	gpio_init_dcmi.Mode = GPIO_MODE_AF_PP;
 	gpio_init_dcmi.Pull = GPIO_PULLUP;
-	gpio_init_dcmi.Speed = GPIO_SPEED_HIGH;
+	gpio_init_dcmi.Speed = GPIO_SPEED_FREQ_HIGH;
 	gpio_init_dcmi.Alternate = GPIO_AF13_DCMI;
 	HAL_GPIO_Init(GPIOB, &gpio_init_dcmi);
 
@@ -61,7 +61,7 @@ void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	gpio_init_dcmi.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_11;
 	gpio_init_dcmi.Mode = GPIO_MODE_AF_PP;
 	gpio_init_dcmi.Pull = GPIO_PULLUP;
-	gpio_init_dcmi.Speed = GPIO_SPEED_HIGH;
+	gpio_init_dcmi.Speed = GPIO_SPEED_FREQ_HIGH;
 	gpio_init_dcmi.Alternate = GPIO_AF13_DCMI;
 	HAL_GPIO_Init(GPIOC, &gpio_init_dcmi);
 }
@@ -92,15 +92,39 @@ void OV7670_DMA_Init(DMA_HandleTypeDef *hdma) {
 }
 
 void OV7670_SCCB_Init(I2C_HandleTypeDef *hi2c) {
+	// Enable APB1 I2C2 clock
+	__HAL_RCC_I2C2_CLK_ENABLE();
+
 	HAL_I2C_DeInit(hi2c);
 	hi2c->Instance = I2C2;
 	hi2c->Init.ClockSpeed = 100000;							// I2C clock frequency < 400 kHz. Common: 100, 400, 1000. Choose 100 kHz.
 	hi2c->Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;	// 7-bit peripheral address is transferred in first byte after start
+	hi2c->Init.DutyCycle = I2C_DUTYCYCLE_2;					// Fast mode duty-cycle
+	hi2c->Init.OwnAddress1 = 0;
+	hi2c->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;	// No need to specify OwnAddress2
+	hi2c->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
 	HAL_I2C_Init(hi2c);
 
 	// Configure GPIOs with Alternate functions
 	GPIO_InitTypeDef gpio_init_i2c2;
 
-	// Enable I2C interrupt
+	// PB10 - I2C2_SCL
+	gpio_init_i2c2.Pin = GPIO_PIN_10;
+	gpio_init_i2c2.Mode = GPIO_MODE_AF_OD;	// Use open-drain, since I2C is two-way, single-line
+	gpio_init_i2c2.Pull = GPIO_PULLUP;
+	gpio_init_i2c2.Speed = GPIO_SPEED_FREQ_LOW;	// 2 MHz
+	gpio_init_i2c2.Alternate = GPIO_AF4_I2C2;
+	HAL_GPIO_Init(GPIOB, &gpio_init_i2c2);
 
+	// PC12 - I2C2_SDA
+	gpio_init_i2c2.Pin = GPIO_PIN_12;
+	gpio_init_i2c2.Mode = GPIO_MODE_AF_OD;
+	gpio_init_i2c2.Pull = GPIO_PULLUP;
+	gpio_init_i2c2.Speed = GPIO_SPEED_FREQ_LOW;
+	gpio_init_i2c2.Alternate = GPIO_AF4_I2C2;
+	HAL_GPIO_Init(GPIOC, &gpio_init_i2c2);
+
+	// Enable I2C error interrupt
+	__HAL_I2C_ENABLE_IT(hi2c, I2C_IT_ERR);
 }
