@@ -1,4 +1,8 @@
-# LunaSYS
+# LunaSys
+
+LunaSys is the firmware/systems component of the Luna project. LunaSys uses the STM32F4 HAL and LL drivers to connect a VGA camera module (OV7670) and a 16x2 LCD display to the STM32F446RE NUCLEO-64 MCU. LunaSys interoperates with LunaUI, a custom platform-agnostic user interface solution built using Qt6 to display live feed from camera module, send data and commands to the hardware via USART and/or RS232, and (in a future release) process images at the application level.
+
+## IO Register Map
 
 Table 1 shows the project's I/O register map.
 
@@ -7,7 +11,7 @@ __Table 1: Luna Project Register Map, STM32F446RE NUCLEO-64__
 | Pin Name (Function After Reset) | GPIO Alternate Function Assignment            |
 |:-------------------------------:|:---------------------------------------------:|
 | VBAT                            |
-| PC13                            |  EVENTOUT (SB17, B1-USER, Onboard Pushbutton) |
+| PC13                            |  None (B1-USER) |
 | PC14-OSC32_IN                   |
 | PC15-OSC32_OUT                  | 
 | PH0-OSC_IN                      | 
@@ -20,7 +24,7 @@ __Table 1: Luna Project Register Map, STM32F446RE NUCLEO-64__
 | VSSA
 | VDDA
 | PA0-WKUP
-| PA1                             |  ADC123_IN1  |
+| PA1                             |  None (ADC123_IN1)  |
 | PA2
 | PA3
 | VSS
