@@ -1,6 +1,6 @@
 #ifndef LUNASYS_B1USER_B1USERCONTROL_H
 #define LUNASYS_B1USER_B1USERCONTROL_H
 
-void B1USER_GPIO_Init(void);
+void Pushbutton_GPIO_Init(void);
 
 #endif // LUNASYS_B1USER_B1USERCONTROL_H

@@ -10,8 +10,8 @@
 
 //**** DEVICE-SPECIFIC CHARACTERISTICS ****//
 
-#define MAX_LINES 2
-#define MAX_COLUMNS 16
+#define LCD_MAX_LINES 2
+#define LCD_MAX_COLUMNS 16
 
 
 //**** BASE COMMAND DEFINITIONS ****//

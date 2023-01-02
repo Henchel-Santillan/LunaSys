@@ -1,14 +1,11 @@
 #include "ov7670_control.h"
 
-#include "stm32f4xx_hal_cortex.h"
-#include "stm32f4xx_hal_gpio.h"
-
 /**
- * Assumes that HAL_RCC_MCOConfig(...) macro has been called.
+ * Assumes that HAL_RCC_MCOConfig(...) macro has been called. Called in main.
  */
 void OV7670_MCO1_Init(void) {
 	//PA8 - MCO1 (Alternate function)
-	GPIO_InitTypeDef gpio_init_mco1;
+	GPIO_InitTypeDef gpio_init_mco1 = {0};
 	gpio_init_mco1.Pin = GPIO_PIN_8;
 	gpio_init_mco1.Mode = GPIO_MODE_AF_PP;
 	gpio_init_mco1.Pull = GPIO_NOPULL;
@@ -19,7 +16,7 @@ void OV7670_MCO1_Init(void) {
 
 /**
  * Assumes that __HAL_RCC_GPIOA_CLK_ENABLE(), __HAL_RCC_GPIOB_CLK_ENABLE() and __HAL_RCC_GPIOC_CLK_ENABLE()
- * have been called.
+ * have been called. Called in main.
  */
 void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	// Initialize DCMI
@@ -32,14 +29,20 @@ void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	hdcmi->Init.CaptureRate = DCMI_CR_ALL_FRAME;	    // Capture all frames
 	hdcmi->Init.ExtendedDataMode = DCMI_EXTEND_DATA_8B;	// 8-bit data width = 1 byte per PIXCLK
 	HAL_DCMI_Init(hdcmi);
+}
 
-	// Enable DCMI interrupts
-	__HAL_DCMI_ENABLE_IT(hdcmi, DCMI_IT_FRAME);	// Frame capture complete interrupt mask
-	__HAL_DCMI_ENABLE_IT(hdcmi, DCMI_IT_OVR);	// Overrun interrupt mask
-	__HAL_DCMI_ENABLE_IT(hdcmi, DCMI_IT_ERR);	// Synchronization error interrupt mask
+/**
+ * Called in HAL_DCMI_MspInit()
+ */
+void OV7670_DCMI_MSP_Init(DCMI_HandleTypeDef *hdcmi, DMA_HandleTypeDef *hdma) {
+	if (hdcmi->Instance != DCMI)
+		return;
 
-	// Configure GPIOs with DCMI alternate functions
-	GPIO_InitTypeDef gpio_init_dcmi;
+	// Enable AHB2 DCMI Clock
+	__HAL_RCC_DCMI_CLK_ENABLE();
+
+	// Configure GPIOs with AF == DCMI
+	GPIO_InitTypeDef gpio_init_dcmi = {0};
 
 	// PA4 - DCMI_HSYNC, PA6 - DCMI_PIXCLK
 	gpio_init_dcmi.Pin = GPIO_PIN_4 | GPIO_PIN_6;
@@ -64,11 +67,6 @@ void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	gpio_init_dcmi.Speed = GPIO_SPEED_FREQ_HIGH;
 	gpio_init_dcmi.Alternate = GPIO_AF13_DCMI;
 	HAL_GPIO_Init(GPIOC, &gpio_init_dcmi);
-}
-
-void OV7670_DMA_Init(DMA_HandleTypeDef *hdma) {
-	// Enable DMA2 controller clock
-	__HAL_RCC_DMA2_CLK_ENABLE();
 
 	// Configure DMA2 Stream1 Channel1 to transfer data from DCMI DR register to internal SRAM
 	HAL_DMA_DeInit(hdma);
@@ -86,15 +84,67 @@ void OV7670_DMA_Init(DMA_HandleTypeDef *hdma) {
 	hdma->Init.MemBurst = DMA_MBURST_SINGLE;				// Single burst data transfer
 	HAL_DMA_Init(hdma);
 
+	// Link the DCMI to DMA2
+	__HAL_LINKDMA(hdcmi, DMA_Handle, *hdma);
+
+	// Enable DCMI interrupts via NVIC
+	__HAL_DCMI_ENABLE_IT(hdcmi, DCMI_IT_FRAME);	// Frame capture complete interrupt mask
+
+	/*__HAL_DCMI_ENABLE_IT(hdcmi, DCMI_IT_OVR);	// Overrun interrupt mask
+	__HAL_DCMI_ENABLE_IT(hdcmi, DCMI_IT_ERR);	// Synchronization error interrupt mask*/
+
+	HAL_NVIC_SetPriority(DCMI_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(DCMI_IRQn);
+}
+
+/**
+ * Called in HAL_DCMI_MspDeInit()
+ */
+void OV7670_DCMI_MSP_DeInit(DCMI_HandleTypeDef *hdcmi) {
+	if (hdcmi->Instance != DCMI)
+		return;
+
+	// Disable DCMI clock
+	__HAL_RCC_DCMI_CLK_DISABLE();
+
+
+	// Deinitialize GPIOs
+	// PA4, PA6
+	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4 | GPIO_PIN_6);
+
+	// PB5, PB7, PB8, PB9
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_5 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9);
+
+	// PC6, PC7, PC8, PC9, PC11
+	HAL_GPIO_DeInit(GPIOC, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_11);
+
+	// Deinitialize DMA
+	HAL_DMA_DeInit(hdcmi->DMA_Handle);
+
+	// Disable IRQ
+	HAL_NVIC_DisableIRQ(DCMI_IRQn);
+}
+
+/**
+ * Initializes the DMA peripheral clock and the DMA2 IRQs. Called in main.
+ */
+void OV7670_DMA_Init(DMA_HandleTypeDef *hdma) {
+	// Enable DMA2 controller clock
+	__HAL_RCC_DMA2_CLK_ENABLE();
+
+	// Enable DMA interrupts
+	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
+	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TE);
+
 	// Configure DMA interrupt priority and enable the IRQ handler using NVIC
-	HAL_NVIC_SetPriority(DMA2_Stream1, 0 /* preempt priority */, 0 /* sub-priority */);
+	HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5 /* preempt priority */, 0 /* sub-priority */);
 	HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 }
 
+/**
+ * Called in main
+ */
 void OV7670_SCCB_Init(I2C_HandleTypeDef *hi2c) {
-	// Enable APB1 I2C2 clock
-	__HAL_RCC_I2C2_CLK_ENABLE();
-
 	HAL_I2C_DeInit(hi2c);
 	hi2c->Instance = I2C2;
 	hi2c->Init.ClockSpeed = 100000;							// I2C clock frequency < 400 kHz. Common: 100, 400, 1000. Choose 100 kHz.
@@ -105,9 +155,20 @@ void OV7670_SCCB_Init(I2C_HandleTypeDef *hi2c) {
 	hi2c->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
 	hi2c->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
 	HAL_I2C_Init(hi2c);
+}
 
-	// Configure GPIOs with Alternate functions
-	GPIO_InitTypeDef gpio_init_i2c2;
+/**
+ * Called in HAL_I2C_MspInit()
+ */
+void OV7670_SCCB_MSP_Init(I2C_HandleTypeDef *hi2c) {
+	if (hi2c->Instance != I2C2)
+		return;
+
+	// Enable APB1 I2C2 Clock
+	__HAL_RCC_I2C2_CLK_ENABLE();
+
+	// Configure GPIOs with AF == I2C2
+	GPIO_InitTypeDef gpio_init_i2c2 = {0};
 
 	// PB10 - I2C2_SCL
 	gpio_init_i2c2.Pin = GPIO_PIN_10;
@@ -124,7 +185,22 @@ void OV7670_SCCB_Init(I2C_HandleTypeDef *hi2c) {
 	gpio_init_i2c2.Speed = GPIO_SPEED_FREQ_LOW;
 	gpio_init_i2c2.Alternate = GPIO_AF4_I2C2;
 	HAL_GPIO_Init(GPIOC, &gpio_init_i2c2);
+}
 
-	// Enable I2C error interrupt
-	__HAL_I2C_ENABLE_IT(hi2c, I2C_IT_ERR);
+/**
+ * Called in HAL_I2C_MspDeInit()
+ */
+void OV7670_SCCB_MSP_DeInit(I2C_HandleTypeDef *hi2c) {
+	if (hi2c->Instance != I2C2)
+		return;
+
+	// Disable I2C2 peripheral clock
+	__HAL_RCC_I2C2_CLK_DISABLE();
+
+	// Deinitialize GPIOs
+	// PB10
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10);
+
+	// PC12
+	HAL_GPIO_DeInit(GPIOC, GPIO_PIN_12);
 }

@@ -1,99 +1,93 @@
 #include "ov7670.h"
-#include "ov7670Config.h"
+
+#include "ov7670_config.h"
 
 
-/**** STATIC VARIABLES ****/
+/**
+ * HAL Handles: DCMI, DMA, I2C (for SCCB)
+ */
+static DCMI_HandleTypeDef *p_hdcmi;
+static I2C_HandleTypeDef *p_hi2c;
 
-static DCMI_HandleTypeDef *sp_hdcmi;
-static DMA_HandleTypeDef  *sp_hdma;
-static I2C_HandleTypeDef  *sp_hi2c;
-
-
-/**** STATIC FUNCTIONS ****/
-
-static HAL_StatusTypeDef Write_Once_OV7670(uint8_t imem_addr, uint8_t data) {
-	HAL_StatusTypeDef status = HAL_I2C_Mem_Write(sp_hi2c, DEVADDR_WRITE, imem_addr, I2C_MEMADD_SIZE_8BIT, &data, 1, 100);
-	return status;
-}
-
-static HAL_StatusTypeDef Write_OV7670(uint8_t imem_addr, uint8_t data) {
-	HAL_StatusTypeDef status;
-
-	do {
-		status = HAL_I2C_Mem_Write(sp_hi2c, DEVADDR_WRITE, imem_addr, I2C_MEMADD_SIZE_8BIT, &data, 1, 100);
-	} while (status != HAL_OK);
-
-	return status;
-}
-
-static HAL_StatusTypeDef Read_Once_OV7670(uint8_t imem_addr, uint8_t data) {
-	// HAL_I2C_Mem_Read() does not work with SCCB
-	HAL_StatusTypeDef status = HAL_I2C_Master_Transmit(sp_hi2c, DEVADDR_WRITE, &imem_addr, 1, 100);
-	status |= HAL_I2C_Master_Receive(sp_hi2c, DEVADDR_WRITE, &data, 1, 100);
-	return status;
-}
-
-static HAL_StatusTypeDef Read_OV7670(uint8_t imem_addr, uint8_t data) {
-	HAL_StatusTypeDef status;
-
-	do {
-		// HAL_I2C_Mem_Read() does not work with SCCB
-		// Transmit in master (controller) mode an amount of data in blocking (polling) mode
-		status = HAL_I2C_Master_Transmit(sp_hi2c, DEVADDR_WRITE, &imem_addr, 1, 100);
-
-		// Receive in master (controller) mode an amount of data in blocking (polling) mode
-		status |= HAL_I2C_Master_Receive(sp_hi2c, DEVADDR_WRITE, &data, 1, 100);
-
-	} while (status != HAL_OK);
-
-	return status;
-}
+/**
+ * States
+ */
+static uint32_t mcont_dest_addr;	// Destination address when in continuous mode
 
 
-/**** FUNCTIONS DEFINITIONS ****/
+/**
+ *	Internal SCCB API
+ */
 
-HAL_StatusTypeDef Init_OV7670(DCMI_HandleTypeDef *p_handle_dcmi, DMA_HandleTypeDef *p_handle_dma, I2C_HandleTypeDef *p_handle_i2c) {
+static SCCB_Error SCCB_Write(uint8_t reg, uint8_t data) {
+	uint32_t busy_timeout = 0x7FFFFF;
 
-	// Set the DCMI, DMA, and I2C handles
-	sp_hdcmi = p_handle_dcmi;
-	sp_hdma  = p_handle_dma;
-	sp_hi2c  = p_handle_i2c;
-
-
-
-	// Reset all internal device registers to default values: 0x12 = COM7, 0x80 = Bit 7 HIGH
-	HAL_StatusTypeDef status = Write_OV7670(0x12, 0x80);
-	HAL_Delay(30);
-
-	return status;
-}
-
-HAL_StatusTypeDef Configure_OV7670(uint32_t mode) {
-	// Stop capture to disable DCMI DMA request and DCMI capture
-	HAL_StatusTypeDef status = Stop_Capture_OV7670();
-
-	// Reset internal OV7670 device registers
-	status |= Write_OV7670(0x12, 0x80);
-
-	// See ov7670Config.h dev_reg_config
-	for (int i = 0; dev_reg_config[i][0] != REG_RANGE; ++i) {
-		status |= Write_OV7670(dev_reg_config[i][0], dev_reg_config[i][1]);
+	// Check for busy timeout
+	while (__HAL_I2C_GET_FLAG(p_hi2c, I2C_FLAG_BUSY)) {
+		if ((busy_timeout--) == 0) {
+			return SCCBE_BUSY;
+		}
 	}
 
-	return status;
-}
+	uint32_t write_timeout = 100;
 
-HAL_StatusTypeDef StartCapture_OV7670(uint32_t mode, uint32_t dest_addr) {
-	if (mode != DCMI_MODE_CONTINUOUS || mode != DCMI_MODE_SNAPSHOT) {
-		return HAL_ERROR;
+	// Attempt to write to OV7670 in blocking mode
+	HAL_StatusTypeDef status = HAL_I2C_Mem_Write(p_hi2c, DEVADDR_WRITE, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, write_timeout);
+	if (status != HAL_OK) {
+		return SCCBE_ERROR;
 	}
 
-	HAL_StatusTypeDef status = Stop_Capture_OV7670();
-	status |= HAL_DCMI_Start_DMA(sp_hdcmi, mode, dest_addr, OV7670_VGA_PPL * OV7670_VGA_LINES);
-
-	return status;
+	return SCCBE_OK;
 }
 
-HAL_StatusTypeDef Stop_Capture_OV7670() {
-	return HAL_DCMI_Stop(sp_hdcmi);
+
+/**
+ * OV7670 user-facing Device Library API
+ */
+
+/**
+ * Initializes the OV7670 by performing a reset and then writing the configurations to the
+ * module as defined in ov7670_config.h via SCCB.
+ */
+SCCB_Error Init_OV7670(DCMI_HandleTypeDef *hdcmi, I2C_HandleTypeDef *hi2c) {
+	p_hdcmi = hdcmi;
+	p_hi2c = hi2c;
+
+	mcont_dest_addr = 0;
+
+	// Full HW reset on the OV7670
+	SCCB_Error sccb_err = SCCB_Write(0x12, 0x80);
+	if (sccb_err == SCCBE_OK) {
+		// Configure the OV7670 if reset successful
+		for (int i = 0; dev_reg_config[i][0] != REG_RANGE; i++) {
+			if (SCCB_Write(dev_reg_config[i][0], dev_reg_config[i][1]) != SCCBE_OK) {
+				break;
+			}
+			HAL_Delay(1);
+		}
+	}
+
+	return sccb_err;
+}
+
+/**
+ * Start DCMI DMA request and DCMI capture. Caller is responsible for ensuring that
+ * the capture_mode is valid and the dest_addr is valid and exists
+ */
+OV7670_Status Start_OV7670(uint32_t capture_mode, uint32_t dest_addr) {
+	if (capture_mode == DCMI_MODE_CONTINUOUS) {
+		mcont_dest_addr = dest_addr;
+	}
+
+	uint32_t length = (QVGA_PPL * QVGA_LINES) / 2;
+	HAL_StatusTypeDef status = HAL_DCMI_Start_DMA(p_hdcmi, capture_mode, dest_addr, length);
+	return (status == HAL_OK) ? OV7670S_START_OK : OV7670S_START_ERROR;
+}
+
+/**
+ * Disable DCMI DMA request and DCMI capture
+ */
+OV7670_Status Stop_OV7670() {
+	HAL_StatusTypeDef status = HAL_DCMI_Stop(p_hdcmi);
+	return (status == HAL_OK) ? OV7670S_STOP_OK : OV7670S_STOP_ERROR;
 }

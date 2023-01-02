@@ -8,16 +8,10 @@
  * */
 
 
-//*** FRAMES, LINES ***//
+//*** PPL, LINES ***//
 
-#define OV7670_VGA_PPL 640		// Pixels per line
-#define OV7670_VGA_LINES 480	// Number of lines
-
-
-//*** CAMERA MODE ***///
-
-#define MODE_CONTINUOUS_GRAB 0
-#define MODE_SNAPSHOT 		 1
+#define QVGA_PPL 320
+#define QVGA_LINES 480
 
 
 //*** DEVICE REGISTER LIST ***//

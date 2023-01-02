@@ -1,6 +1,31 @@
 # LunaSys
 
-LunaSys is the firmware/systems component of the Luna project. LunaSys uses the STM32F4 HAL and LL drivers to connect a VGA camera module (OV7670) and a 16x2 LCD display to the STM32F446RE NUCLEO-64 MCU. LunaSys interoperates with LunaUI, a custom platform-agnostic user interface solution built using Qt6 to display live feed from camera module, send data and commands to the hardware via USART and/or RS232, and (in a future release) process images at the application level.
+LunaSys is the firmware/systems component of the Luna project. LunaSys uses the STM32F4 HAL and LL drivers to connect a VGA camera module (OV7670) and a 16x2 LCD display to the STM32F446RE NUCLEO-64 MCU. LunaSys interoperates with [LunaUI](https://github.com/Henchel-Santillan/LunaUI), a custom platform-agnostic user interface solution built using Qt6 to display live feed from camera module, send data and commands to the hardware via USART and/or RS232, and (in a future release) process images at the application level.
+
+## Repository Navigation
+All relevant user code can be found in the [Core](https://github.com/Henchel-Santillan/LunaSys/tree/master/Core) directory. See the [Docs](https://github.com/Henchel-Santillan/LunaSys/tree/master/Docs) directory for LunaSys-relevant peripheral summaries, image resources, and architecture diagrams.
+
+## Building and Flashing
+
+See [UM2609](https://www.st.com/resource/en/user_manual/um2609-stm32cubeide-user-guide-stmicroelectronics.pdf) user guide for the STM32CubeIDE.
+
+Refer to Section 36 (_STM32F446xx devices bootloader_) and __Table 2__ (_Bootloader activation patterns_) under Section 4 (_General bootloader description_) of the [AN2606](https://www.st.com/resource/en/application_note/cd00167594-stm32-microcontroller-system-memory-boot-mode-stmicroelectronics.pdf) application note for more information on the board-specific bootloader.
+
+The instructions that follow are for flashing to a __DFU connected board__ using the `STM32CubeIDE`.
+
+1. Use a MicroUSB Type-B to USB Type-A connector to connect the F446RE MCU to a PC.
+2. In the STM32CubeIDE, click once on the project in the _Project Explorer_ pane and click `Project` in the toolbar and then `Build Project`. 
+3. Click `Run`. 
+4. Edit the `Run Configurations` as follows:
+
+* In the `Main` tab,
+* In the `Debugger` tab,
+* In the `Startup` tab,
+* In the `Source` tab,
+* In the `Common` tab,
+
+## High-Level Architecture
+(WIP - Coming Soon)
 
 ## IO Register Map
 
@@ -25,8 +50,8 @@ __Table 1: Luna Project Register Map, STM32F446RE NUCLEO-64__
 | VDDA
 | PA0-WKUP
 | PA1                             |  None (ADC123_IN1)  |
-| PA2
-| PA3
+| PA2                             |  USART2_TX          |
+| PA3                             |  USART2_RX          |
 | VSS
 | VDD
 | PA4                             |  DCMI_HSYNC  |
@@ -34,7 +59,7 @@ __Table 1: Luna Project Register Map, STM32F446RE NUCLEO-64__
 | PA6                             |  DCMI_PIXCLK  |
 | PA7
 | PC4
-| PC5
+| PC5                             | None (External Pushbutton) |
 | PB0
 | PB1
 | PB2-BOOT 1

@@ -1,16 +1,16 @@
 #ifndef LUNASYS_LCD1602A_LCD1602A_H
 #define LUNASYS_LCD1602A_LCD1602A_H
 
-#include "stm32f4xx_hal.h"
-#include <stdint.h>
+#include "stm32f4xx.h"
+#include "lcd1602a_config.h"
 
 
 /*** Common Device Library structures ***/
 
 typedef struct _Pin_TypeDef {
 
-	GPIO_TypeDef *GPIO_PERIPHERAL;	// GPIOx, x = { A, ..., H }
-	uint32_t GPIO_PIN;				// GPIO_Pin_x, x = { 0, ..., 15 }
+	GPIO_TypeDef *GPIO_PERIPHERAL;	// GPIOx
+	uint32_t GPIO_PIN;				// GPIO_Pin_x
 
 } Pin_TypeDef;
 
@@ -59,14 +59,5 @@ void Blink_On_LCD1602A(LCD_TypeDef *p_lcd);
 
 void Write_Char_LCD1602A(LCD_TypeDef *p_lcd, uint8_t ch);
 void Write_String_LCD1602A(LCD_TypeDef *p_lcd, uint8_t *str, uint8_t str_size);
-
-
-/* Users of this Device Library should generally not have to call these functions, and it is advised to use
- * the Device Library functions suffixed with "LCD1602A" instead. Users that do choose to use these functions should
- * #include "lcd1602aConfig.h" and use the predefined command and flag macros.
- *  */
-
-void send_command(LCD_TypeDef *p_lcd, uint8_t command);
-void send_data(LCD_TypeDef *p_lcd, uint8_t data);
 
 #endif // LUNASYS_LCD1602A_LCD1602A_H
