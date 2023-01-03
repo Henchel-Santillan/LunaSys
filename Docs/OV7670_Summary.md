@@ -1,7 +1,7 @@
 # OV7670 Device Overview
 
 ## Preface 
-The OV7670 is a CMOS camera. It can operate at a maximum of 30 frames per second (fps) and is limited to VGA resolution (640 x 480 px). The OV7670 module used in the Luna project comes without a FIFO buffer.
+The OV7670 is a simple VGA camera module and image processor. It promises a maximum of 30 frames per second (fps) and VGA resolution (640 x 480 px). The OV7670 module used in the LunaSys project comes without a FIFO buffer.
 
 <br />
 
@@ -17,8 +17,8 @@ __Table 1: Pinout of OV7670 Camera Module__
 |---------|-------------------|
 | VDD     | 3.3V power supply |
 | GND     | Ground            |
-| SCL     | I2C Serial Clock Line |
-| SDA     | I2C Serial Data Line |
+| SCL     | SCCB (~I2C) Serial Clock Line |
+| SDA     | SCCB (~I2C) Serial Data Line |
 | VS      | VSYNC |
 | HS      | HSYNC |
 | PLK     | Pixel Clock Output |
@@ -30,7 +30,7 @@ __Table 1: Pinout of OV7670 Camera Module__
 <br />
 
 ## Power Constraints
-According to the datasheet, 3.3V can be safely supplied to VDD. The I/O pins may also receive 3.3V safely, given that internal protection diodes will clamp the voltage down to around 2.8V. However, it is preferable to avoid the risk of power loss - as well as potentially faster degradation of the module - and so 3.0V will be supplied to the I/O pins. 
+According to the datasheet, 3.3V can be safely supplied to VDD. The I/O pins may also receive 3.3V safely, given that internal protection diodes will clamp the voltage down to around 2.8V. 
 
 <br />
 
@@ -42,18 +42,18 @@ The OV7670 is parametrized through an I2C communication bus. On the F446-RE, pin
 ## Clock and Timing Configuration
 The OV7670 sends image data in a __parallel synchronous format__. When setting up the `DCMI`, it is therefore important that the "parallel" interface type is selected. 
 
-An input clock signal must be provided by the MCU to the module via the `XLK` (system clock input) pin. The frequency of this signal, according to the data sheet, is between __10 and 48 MHz__, with __24 MHz__ being the typical (TYP). The STM32F446-RE is capable of providing up to __54 MHz__ (maximum DCMI pixel clock output). Luna will use `PA8` and assign it to `MCO1` to achieve a 24 MHz frequency. The camera module's `PLK` pin will connect to a GPIO pin (`PA6`) assigned to `DCMI_PIXCLK` via GPIO alternate functions on the F446-RE. These pin assignments are related to the pixel clock.
+An input clock signal must be provided by the MCU to the module via the `XLK` (system clock input) pin. The frequency of this signal, according to the data sheet, is between __10 and 48 MHz__, with __24 MHz__ being the typical (TYP). The STM32F446-RE is capable of providing up to __54 MHz__ (maximum DCMI pixel clock output). LunaSys will use `PA8` and assign it to `MCO1` to achieve a 24 MHz frequency. The camera module's `PLK` pin will connect to a GPIO pin (`PA6`) assigned to `DCMI_PIXCLK` via GPIO alternate functions on the F446-RE. These pin assignments are related to the pixel clock.
 
-It may be worthwhile to note parenthetically that by default, the frequency of `XLK` is equivalent to that of `PLK`. Since `XLK` is fed a clock signal from the MCU of 24 MHz, a frame rate (how fast frames are sent) of 30 fps can be expected in VGA mode.
+It may be worthwhile to note parenthetically that by default, the frequency of `XLK` is equivalent to that of `PLK`. Recall that `XLK` is fed a 24 MHz clock signal from the MCU.
 
-The `VS` pin of the OV7670 is for `VSYNC`, and the `HS` pin is for `HSYNC`. For a valid capture, VSYNC must be configured __active high__ on the STM32 (since a valid capture occurs when VSYNC is low) and HSYNC must be configured __active low__ on the STM32 (since a valid capture occurs when HSYNC is high). During `HSYNC` high state, 640 pixels must be captured. This is equivalent to _one line_. During `VSYNC` low state, 480 lines must be captured. This gives the image resolution of VGA, or 640 x 480 pixels.
+The `VS` pin of the OV7670 is for `VSYNC`, and the `HS` pin is for `HSYNC`. For a valid capture, VSYNC must be configured __active high__ on the STM32 (since a valid capture occurs when VSYNC is low) and HSYNC must be configured __active low__ on the STM32 (since a valid capture occurs when HSYNC is high). During `HSYNC` high state, _x_ pixels must be captured. This is equivalent to _one line_. During `VSYNC` low state, _y_ lines must be captured. This gives the image resolution of _x_ by _y_ pixels.
 
 On the F446-RE, pins `PA4` and `PB7` have been assigned to `DCMI_HSYNC` and `DCMI_VSYNC`, respectively. 
 
 <br />
 
 ## Image Data 
-The OV7670 has a total of 8 pixel data output pins, labelled `D0` to `D7`. Note that image data _must_ be sampled at the __rising edge__ of the `XCLK` signal. Table 2 shows the GPIO pins on the F446-RE assigned to DCMI for the pixel data output pins (`DCMI_Dx` on the F446-RE and `Dx` on the OV7670, where x = {0, 1, 2, 3, 4 , 5, 6, 7}).
+The OV7670 has a total of 8 pixel data output pins, labelled `D0` to `D7`. Note that image data _must_ be sampled at the __rising edge__ of the `XCLK` signal. Table 2 shows the GPIO pins on the F446-RE assigned to DCMI for the pixel data output pins (`DCMI_Dx` on the F446-RE, and `Dx` on the OV7670, where x = {0, 1, 2, 3, 4 , 5, 6, 7}).
 
 <br />
 
@@ -90,7 +90,7 @@ The OV7670 supports the following frame formats:
 
 ## SCCB
 
-The SCCB (Serial Camera Control Bus) on the OV7670 is compatible with I2C. See the OmniVision SCCB specification here 
+The SCCB (Serial Camera Control Bus) on the OV7670 is compatible with I2C. This bus will be used to configure the camera via software. See the OmniVision SCCB specification here 
 
 >https://www.waveshare.com/w/upload/1/14/OmniVision_Technologies_Seril_Camera_Control_Bus%28SCCB%29_Specification.pdf 
 

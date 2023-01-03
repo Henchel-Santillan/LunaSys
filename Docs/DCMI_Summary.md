@@ -1,4 +1,4 @@
-# Digital Camera Interface (DCMI) and OV7670
+# Digital Camera Interface (DCMI)
 
 ## Preface
 
@@ -15,9 +15,9 @@ __Table 1: Camera Module Signals Overview__
 
 | Signal Type | Description |
 | :----------:|:------------|
-| Control     | Used for clock generation and data transfer synchonization. Camera modules provide two data synchronization signals: (1) HSYNC (horizontal or line synchronization); and (2) VSYNC (vertical or frame synchronization). |
+| Control     | Used for clock generation and data transfer synchronization. Camera modules provide two data synchronization signals: (1) HSYNC (horizontal or line synchronization); and (2) VSYNC (vertical or frame synchronization). |
 | Image Data  | The width of these signals determines the number of bits to be transferred at each pixel clock. |
-| Power Supply | Fairly obvious use case. See the Power Constraints section of the OV7670_Summary.md for more information. |
+| Power Supply | Fairly obvious use case. See the Power Constraints section of the [OV7670_Summary.md](https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/OV7670_Summary.md) for more information. |
 | Camera Configuration | Related to several image features, including resolution, format, frame rate, contrast, and brightness. These signals are also used for interface type selection (parallel versus serial). |      
 
 <br />
@@ -38,7 +38,7 @@ The `DCMI_PLK`, `DCMI_VSYNC`, and `DCMI_HSYNC` control signals are fed into a __
 
 The 4-word FIFO is where data from the data extractor is packed. It adapts the data rate transfers to the AMBA High-Performance (AHB) bus. No overrun protection is established; that is, in the event of overrun (overfilling of a buffer causing memory corruption) or sync signal errors, data in the FIFO may be overwritten if the AHB does not sustain the data transfer rate. When this happens, the FIFO is reset, and the DCMI waits for the start of a new frame. 
 
-Figure 2 shows the main components of the DCMI, taken from the AN5020 STM reference. 
+Figure 2 shows the main components of the DCMI, taken from the [AN5020](https://www.st.com/resource/en/application_note/an5020-digital-camera-interface-dcmi-on-stm32-mcus-stmicroelectronics.pdf) application note. 
 
 <p align="center">
   <img src="https://github.com/Henchel-Santillan/LunaSys/blob/master/Docs/Res/dcmi_arch.png">
@@ -54,15 +54,15 @@ The 32-bit register is where the data from the 4-word FIFO is ordered. The littl
 
 <p align="center"><b>Figure 3: Structure of 32-bit word [1]</b></p>
 
-Once the 32-bit word is made, a DMA (direct memory access) request is generated. The DCMI is connected to the AHB matrix via AHB2 peripherals, and is accessed by the DMA controller to transfer data to the appropriate memory destination (either to internal SRAMs or to external memory via flexible memory controller, or FMC).
+Once the 32-bit word is made, a DMA (direct memory access) request is generated. The DCMI is connected to the AHB matrix via AHB2 peripherals, and is accessed by the DMA controller to transfer data to the appropriate memory destination (either to internal SRAMs, or to external memory via flexible memory controller (FMC) or SPI).
 
 <br />
 
 ## DCMI Data Synchronization
 
-The data synchronization method implemented in Luna is the __hardware__ or __external__ synchronization method. The `DCMI_PIXCLK` captured edge is configured to be the rising edge (by convention) and both `DCMI_VSYNC` and `DCMI_HSYNC` are programmed active level. 
+The data synchronization method implemented in LunaSys is the __hardware__ or __external__ synchronization method. The `DCMI_PIXCLK` captured edge is configured to be the rising edge (by convention) and both `DCMI_VSYNC` and `DCMI_HSYNC` are programmed active level. 
 
-In this project, the active level is active high for both LINE VALID (HSYNC) and FRAME VALID (VSYNC). This means that data at the sampling points (rising edges of the clock signal) are considered invalid ("blank" frames, either vertical or horizontal blanking) when HSYNC or VSYNC are high.
+In this project, the active level is active low for LINE VALID (HSYNC) and active high for FRAME VALID (VSYNC). This means that data at the sampling points (rising edges of the clock signal) are considered invalid ("blank" frames, either vertical or horizontal blanking) when HSYNC is low and when VSYNC is high.
 
 See Figure 4 for reference.
 
@@ -105,7 +105,7 @@ To correctly implement the application, first reset the DCMI and the camera modu
 4. DMA; and
 5. Camera Module.
 
-Some practices and recommendations are given in the ensuing sections.
+Some practices and recommendations are given in the ensuing sub-sections. See the STM32F4 HAL User Manual [UM1725](https://www.st.com/resource/en/user_manual/um1725-description-of-stm32f4-hal-and-lowlayer-drivers-stmicroelectronics.pdf) for more information on how to use the HAL for configuration.
 
 ### GPIO Configuration 
 
@@ -128,8 +128,6 @@ For the hardware synchronization mode, the `DCMI_HSYNC` and `DCMI_VSYNC` polarit
 
 ### DCMI and DMA Configuration
 
-[TODO] Finish this section!
-
 Configuring the DCMI means selecting the capture mode, the data format, image size, and resolution. See section 6.3 of AN5020 for more details.
 
 Configuring the DMA means setting up the proper DCMI-to-memory transfers (transfer direction, source address, destination address, peripheral data width, the number of 32-bit data words for transfer, and the DMA operation mode), the configuration relative to image size and capture mode, channel and stream, and the FIFO. See section 6.4 of AN5020 for more information. 
@@ -148,8 +146,6 @@ In the initialization step, several key features can be configured:
 4. Synchronization mode
 5. Clock signal frequencies
 6. Output data format
-
-__________
 
 # References
 

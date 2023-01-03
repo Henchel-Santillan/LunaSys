@@ -55,7 +55,7 @@ From Figure 1, notice how the index of the chroma changes by 2 each row (0 to 2 
 |----------|-----|-----|-----|-----|-----|-----|-----|----|-----|-----|-----|-----|
 | Byte     | Cb0 | Y0  | Cr0 | Y1  | Cb2 | Y2  | Cr2 | Y3 | Cb4 | Y4  | Cr4 | Y5  |
 
-<p align="center"><b>Figure 2: Arrival order of luminance and chroma data, YCbCr422 pixel format</b></p>
+<p><b>Figure 2: Arrival order of luminance and chroma data, YCbCr422 pixel format</b></p>
 
 
 As may be observed from Figure 2, the arrival order of the data is word by word, byte by byte. The actual pixels are grouped according to the index. Pixel 0, for example, would be `Y0Cb0Cr0`; pixel 1 would be `Y1Cb0Cr0`, and pixel 2 would be `Y2Cb2Cr2`.
