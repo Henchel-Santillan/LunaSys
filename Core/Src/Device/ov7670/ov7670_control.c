@@ -15,8 +15,7 @@ void OV7670_MCO1_Init(void) {
 }
 
 /**
- * Assumes that __HAL_RCC_GPIOA_CLK_ENABLE(), __HAL_RCC_GPIOB_CLK_ENABLE() and __HAL_RCC_GPIOC_CLK_ENABLE()
- * have been called. Called in main.
+ * Initializes DCMI communication parameters. Called in main.
  */
 void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	// Initialize DCMI
@@ -28,11 +27,12 @@ void OV7670_DCMI_Init(DCMI_HandleTypeDef *hdcmi) {
 	hdcmi->Init.HSPolarity = DCMI_HSPOLARITY_LOW;		// Lines are valid on HSYNC high
 	hdcmi->Init.CaptureRate = DCMI_CR_ALL_FRAME;	    // Capture all frames
 	hdcmi->Init.ExtendedDataMode = DCMI_EXTEND_DATA_8B;	// 8-bit data width = 1 byte per PIXCLK
-	HAL_DCMI_Init(hdcmi);
+	HAL_DCMI_Init(hdcmi);	// Calls HAL_DCMI_MspInit()
 }
 
 /**
- * Called in HAL_DCMI_MspInit()
+ * Assumes that __HAL_RCC_GPIOA_CLK_ENABLE(), __HAL_RCC_GPIOB_CLK_ENABLE() and __HAL_RCC_GPIOC_CLK_ENABLE()
+ * have been called. Called in HAL_DCMI_MspInit()
  */
 void OV7670_DCMI_MSP_Init(DCMI_HandleTypeDef *hdcmi, DMA_HandleTypeDef *hdma) {
 	if (hdcmi->Instance != DCMI)
@@ -74,17 +74,15 @@ void OV7670_DCMI_MSP_Init(DCMI_HandleTypeDef *hdcmi, DMA_HandleTypeDef *hdma) {
 	hdma->Init.Channel = DMA_CHANNEL_1;						// Set the channel to Channel 1
 	hdma->Init.Direction = DMA_PERIPH_TO_MEMORY;			// Data transfer is from peripheral (DCMI) to memory
 	hdma->Init.PeriphInc = DMA_PINC_DISABLE;				// Disable peripheral address register increment. PBURST mode is not possible, omit.
-	hdma->Init.MemInc = DMA_MINC_ENABLE;					// Enable memory address register increment
+	hdma->Init.MemInc = DMA_MINC_DISABLE;					// Enable memory address register increment
 	hdma->Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;	// Set the peripheral data width to be one word (32 bits)
 	hdma->Init.MemDataAlignment = DMA_MDATAALIGN_WORD;		// Set the memory data width to be one word (32 bits)
 	hdma->Init.Mode = DMA_NORMAL;							// Set the operation mode of DMA2 Stream1 to normal (vs. circular)
-	hdma->Init.Priority = DMA_PRIORITY_HIGH;				// High SW priority for DMA2 Stream1
-	hdma->Init.FIFOMode = DMA_FIFOMODE_ENABLE;				// Enable FIFO mode
-	hdma->Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;		// Full threshold for DMA FIFO mode
-	hdma->Init.MemBurst = DMA_MBURST_SINGLE;				// Single burst data transfer
+	hdma->Init.Priority = DMA_PRIORITY_LOW;				    // Low SW priority for DMA2 Stream1
+	hdma->Init.FIFOMode = DMA_FIFOMODE_DISABLE;				// Enable FIFO mode
 	HAL_DMA_Init(hdma);
 
-	// Link the DCMI to DMA2
+	// Link the DCMI to DMA
 	__HAL_LINKDMA(hdcmi, DMA_Handle, *hdma);
 
 	// Enable DCMI interrupts via NVIC
@@ -107,7 +105,6 @@ void OV7670_DCMI_MSP_DeInit(DCMI_HandleTypeDef *hdcmi) {
 	// Disable DCMI clock
 	__HAL_RCC_DCMI_CLK_DISABLE();
 
-
 	// Deinitialize GPIOs
 	// PA4, PA6
 	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4 | GPIO_PIN_6);
@@ -121,18 +118,21 @@ void OV7670_DCMI_MSP_DeInit(DCMI_HandleTypeDef *hdcmi) {
 	// Deinitialize DMA
 	HAL_DMA_DeInit(hdcmi->DMA_Handle);
 
+	// Disable frame event interrupt
+	__HAL_DCMI_DISABLE_IT(hdcmi, DCMI_IT_FRAME);	// Frame capture complete interrupt mask
+
 	// Disable IRQ
 	HAL_NVIC_DisableIRQ(DCMI_IRQn);
 }
 
 /**
- * Initializes the DMA peripheral clock and the DMA2 IRQs. Called in main.
+ * Initializes the DMA peripheral clock and DMA2 IRQ. Called in main.
  */
 void OV7670_DMA_Init(DMA_HandleTypeDef *hdma) {
 	// Enable DMA2 controller clock
 	__HAL_RCC_DMA2_CLK_ENABLE();
 
-	// Enable DMA interrupts
+	// Enable DMA interrupts: transfer complete and transfer error
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TC);
 	__HAL_DMA_ENABLE_IT(hdma, DMA_IT_TE);
 
@@ -142,7 +142,7 @@ void OV7670_DMA_Init(DMA_HandleTypeDef *hdma) {
 }
 
 /**
- * Called in main
+ * Initializes I2C communication parameters for the SCCB protocol used by the OV7670. Called in main
  */
 void OV7670_SCCB_Init(I2C_HandleTypeDef *hi2c) {
 	HAL_I2C_DeInit(hi2c);
@@ -154,11 +154,11 @@ void OV7670_SCCB_Init(I2C_HandleTypeDef *hi2c) {
 	hi2c->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;	// No need to specify OwnAddress2
 	hi2c->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
 	hi2c->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-	HAL_I2C_Init(hi2c);
+	HAL_I2C_Init(hi2c);	// Calls HAL_I2C_MspInit()
 }
 
 /**
- * Called in HAL_I2C_MspInit()
+ * Called in HAL_I2C_MspInit(). Assumes __HAL_RCC_GPIOB_CLK_ENABLE() and __HAL_RCC_GPIOC_CLK_ENABLE() have been called.
  */
 void OV7670_SCCB_MSP_Init(I2C_HandleTypeDef *hi2c) {
 	if (hi2c->Instance != I2C2)

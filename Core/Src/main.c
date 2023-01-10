@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -14,52 +13,38 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx_hal.h"
+ */
 
+#include "stm32f4xx.h"
+#include "lunasys_device.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
+/**
+ * HAL Peripheral Handles
+ */
 DCMI_HandleTypeDef hdcmi;
 DMA_HandleTypeDef hdma;
+DMA_HandleTypeDef hdma_uart_rx;
+DMA_HandleTypeDef hdma_uart_tx;
+
+UART_HandleTypeDef huart;
+
 I2C_HandleTypeDef hi2c;
 
-/* USER CODE END PV */
+/**
+ * LCD Pin_, Data_Pins_, LCD_TypeDef
+ */
 
-/* Private function prototypes -----------------------------------------------*/
+Pin_TypeDef pin_rs = { .GPIO_PERIPHERAL = GPIOB, .GPIO_PIN = GPIO_PIN_12 },	// PB12
+			pin_rw = { .GPIO_PERIPHERAL = GPIOB, .GPIO_PIN = GPIO_PIN_13 },	// PB13
+			pin_e  = { .GPIO_PERIPHERAL = GPIOB, .GPIO_PIN = GPIO_PIN_14 }, // PB14
+			pin_d4 = { .GPIO_PERIPHERAL = GPIOC, .GPIO_PIN = GPIO_PIN_0 },	//PC0
+			pin_d5 = { .GPIO_PERIPHERAL = GPIOC, .GPIO_PIN = GPIO_PIN_1 },	// PC1
+			pin_d6 = { .GPIO_PERIPHERAL = GPIOC, .GPIO_PIN = GPIO_PIN_2 },	// PC2
+			pin_d7 = { .GPIO_PERIPHERAL = GPIOC, .GPIO_PIN = GPIO_PIN_3 };	// PC3
+
+
 void SystemClock_Config(void);
 
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -67,40 +52,30 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  // Reset all peripherals, initialize the Flash interface and the Systick. Also calls HAL_MspInit() to init LL HW.
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
+  // Configure the system clock
   SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+  // Enable GPIO{A, B, C} clocks
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
-  /* USER CODE END SysInit */
+  // Initialize the LCD Device Library pin structures. Note that this is separate from initializing GPIO.
+  Data_Pins_TypeDef data_pins = { .D0 = NULL, .D1 = NULL, .D2 = NULL, .D3 = NULL,
+  	  	  	  	  	  	  	  	  .D4 = &pin_d4, .D5 = &pin_d5, .D6 = &pin_d6, .D7 = &pin_d7};
+  LCD_TypeDef lcd_pins = {0};
 
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
+  // Initialize devices and peripherals using lunasys_device API
+  Camera_Init(&hdcmi, &hdma, &hi2c);
+  LCD_Init_4B2L(&lcd_pins, &pin_rs, &pin_rw, &pin_e, &data_pins);
+  Pushbutton_GPIO_Init();
+  Serial_Init(&huart, &hdma_uart_rx, &hdma_uart_tx);
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+  // Infinite loop
+  while (1) {}
 }
 
 /**
@@ -109,39 +84,82 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+	/** Configure the main internal regulator output voltage
+	*/
+	__HAL_RCC_PWR_CLK_ENABLE();
+	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+	/** Initializes the RCC Oscillators according to the specified parameters
+	* in the RCC_OscInitTypeDef structure.
+	*/
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+	RCC_OscInitStruct.PLL.PLLM = 16;
+	RCC_OscInitStruct.PLL.PLLN = 336;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+	RCC_OscInitStruct.PLL.PLLQ = 2;
+	RCC_OscInitStruct.PLL.PLLR = 2;
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
-  /** Configure the MCO1 Clock. Specify the output direction as MCO1,
-   * the clock source to output as the main PLL clock,
-   * and the prescaler to be division by 4 to apply to the MCO1 clock.
-   */
+	/** Initializes the CPU, AHB and APB buses clocks
+	*/
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+	                            |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_PLLCLK, RCC_MCODIV_4);
+	HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
+
+	/** Configure the MCO1 Clock. Specify the output direction as MCO1,
+	* the clock source to output as the main PLL clock,
+	* and the prescaler to be division by 4. Using RCC_MCO1SOURCE_PLLCLK and RCC_MCODIV_4 results in garbage output.
+	*/
+
+	HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_PLLCLK, RCC_MCODIV_4);
 }
 
-/* USER CODE BEGIN 4 */
 
-/* USER CODE END 4 */
+/**
+ * INTERRUPT (IT) CALLBACKS
+ */
+
+/**
+ * External Interrupt callback for DCMI
+ */
+
+void HAL_DCMI_FrameEventCallback(DCMI_HandleTypeDef *hdcmi) {
+
+}
+
+/**
+ * External Interrupt callback for UART
+ */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+
+}
+
+/**
+ * EXTI GPIO Callback
+ */
+
+/**
+ * External Interrupt callback for pushbuttons
+ */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+
+}

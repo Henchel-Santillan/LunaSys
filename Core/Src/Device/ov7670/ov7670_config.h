@@ -3,7 +3,7 @@
 
 /*
  * Configuration file for the OV7670 device
- * Defines device-specific settings
+ * Defines device-specific settings. See http://web.mit.edu/6.111/www/f2016/tools/OV7670_2006.pdf
  *
  * */
 
@@ -26,8 +26,10 @@ const uint8_t dev_reg_config[][2] = {
 	{ 0x8C, 0x00 },
 	{ 0x40, 0xD0 },
 
-	// VGA Output, RGB
-	{ 0x12, 0x04 },
+	// Image format
+	{ 0x12, 0x08 },
+
+	{ 0xB0, 0x84 },	// Colour mode
 
 	// Configure output sequence as UYVY: closest representation to original available signal, thus good for capturing
 	// Gamma enable, UV auto adjust, and UYVY

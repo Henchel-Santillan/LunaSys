@@ -56,3 +56,20 @@ LunaSys_Error LCD_Write_CaptureMode(LCD_TypeDef *p_lcd, uint32_t capture_mode) {
 
 	return LUNASYSE_OK;
 }
+
+/**
+ * UART
+ */
+
+LunaSys_Error Serial_Init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_rx, DMA_HandleTypeDef *hdma_tx) {
+	if (huart == NULL) {
+		return LUNASYSE_ERROR;
+	}
+
+	HAL_StatusTypeDef status = LunaSys_Serial_Init(huart);
+	if (status == HAL_OK) {
+		LunaSys_Serial_DMA_Init(hdma_rx, hdma_tx);
+	}
+
+	return (status != HAL_OK) ? LUNASYSE_ERROR : LUNASYSE_OK;
+}

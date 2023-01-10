@@ -1,28 +1,17 @@
 # LunaSys
 
-LunaSys is the firmware/systems component of the Luna project. LunaSys uses the STM32F4 HAL and LL drivers to connect a VGA camera module (OV7670) and a 16x2 LCD display to the STM32F446RE NUCLEO-64 MCU. LunaSys interoperates with [LunaUI](https://github.com/Henchel-Santillan/LunaUI), a custom platform-agnostic user interface solution built using Qt6 to display live feed from the camera module, and send data and commands to the hardware via USART (using RS232). Image processing at the application level may be in a future release.
+LunaSys is the firmware/systems component of the Luna project. LunaSys uses the STM32F4 HAL and LL drivers to connect a VGA camera module (OV7670) and a 16x2 LCD display to the STM32F446RE NUCLEO-64 MCU. LunaSys is intended to interoperate with [LunaUI](https://github.com/Henchel-Santillan/LunaUI), a custom platform-agnostic user interface solution built using Qt6 to display captured images and video from the camera module, and to collect logging information from the hardware via UART (using RS232).
 
 ## Repository Navigation
 All relevant user code can be found in the [Core](https://github.com/Henchel-Santillan/LunaSys/tree/master/Core) directory. See the [Docs](https://github.com/Henchel-Santillan/LunaSys/tree/master/Docs) directory for LunaSys-relevant peripheral summaries, image resources, and architecture diagrams.
 
-## Building and Flashing
+## Building and Flashing (WIP)
 
 See [UM2609](https://www.st.com/resource/en/user_manual/um2609-stm32cubeide-user-guide-stmicroelectronics.pdf) user guide for the STM32CubeIDE.
 
 Refer to Section 36 (_STM32F446xx devices bootloader_) and __Table 2__ (_Bootloader activation patterns_) under Section 4 (_General bootloader description_) of the [AN2606](https://www.st.com/resource/en/application_note/cd00167594-stm32-microcontroller-system-memory-boot-mode-stmicroelectronics.pdf) application note for more information on the board-specific bootloader.
 
-The instructions that follow are for flashing to a __DFU connected board__ using the STM32CubeIDE.
-
-1. Use a MicroUSB Type-B to USB Type-A connector to connect the F446RE MCU to a PC.
-2. In the STM32CubeIDE, click once on the project in the _Project Explorer_ pane and click `Project` in the toolbar and then `Build Project`. 
-3. Click `Run`. 
-4. Edit the `Run Configurations` as follows:
-
-* In the `Main` tab,
-* In the `Debugger` tab,
-* In the `Startup` tab,
-* In the `Source` tab,
-* In the `Common` tab,
+The build instructions (soon to come) are for flashing to a __DFU connected board__.
 
 ## High-Level Architecture
 
@@ -32,7 +21,7 @@ The instructions that follow are for flashing to a __DFU connected board__ using
 
 ## IO Register Map
 
-Table 1 shows the project's I/O register map.
+Table 1 shows the project's I/O register map. Note that these pin assignments are specific to `STM32F446xC/E` boards.
 
 __Table 1: Luna Project Register Map, STM32F446RE NUCLEO-64__
 
@@ -102,3 +91,9 @@ __Table 1: Luna Project Register Map, STM32F446RE NUCLEO-64__
 | PB9                             |  DCMI_D7  |
 | VSS
 | VDD
+
+## Pre-Release Omissions
+* Complete and tested camera module configuration
+* UART Tx and Rx callbacks, DCMI frame event callback (logging + error handling), GPIO_EXTI callback
+* Configuring DMA for USART2_TX
+* Application initializations in main

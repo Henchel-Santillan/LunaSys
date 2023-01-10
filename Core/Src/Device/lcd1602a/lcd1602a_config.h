@@ -4,7 +4,8 @@
 
 /*
  * Configuration file for the LCD1602A device
- * Defines device-specific settings
+ * Defines device-specific settings. See https://www.sparkfun.com/datasheets/LCD/HD44780.pdf and
+ * https://www.openhacks.com/uploadsproductos/eone-1602a1.pdf
  *
  * */
 
